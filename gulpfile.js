@@ -1,51 +1,41 @@
-var gulp = require('gulp'),
-    uglify = require('gulp-uglify'),
-    sass = require('gulp-ruby-sass'),
-    livereload = require('gulp-livereload'),
-    imagemin = require('gulp-imagemin'),
-    prefix = require('gulp-autoprefixer');
+var postcss  = require('gulp-postcss'),
+cssnext      = require("gulp-cssnext"),
+gulp         = require('gulp'),
+stylus       = require('gulp-stylus'),
+csswring     = require('csswring'),
+mqpacker     = require('css-mqpacker'),
+autoprefixer = require('autoprefixer'),
+rucksack     = require('gulp-rucksack'),
+axis         = require('axis'),
+plumber      = require('gulp-plumber');
 
+var path = {
+    css: './stylus/index.styl'
+};
 
-// Error
-function errorLog(error){
-    console.error.bind(error);
-    this.emit('end');
-}
-
-// Scripts - uglify
-gulp.task('scripts', function(){
-    gulp.src('scripts/**/*.js')
-        .pipe(changed('scripts/**/*.js'))
-        .pipe(uglify())
-        .on('error', errorLog)
-        .pipe(gulp.dest('minscripts/'));
+rucksack({
+    fallbacks: true
 });
 
-// Styles
-gulp.task('styles', function(){
-    gulp.src('scss/**/*.scss')
-        .pipe(sass({
-            style: 'compressed'
-        }))
-        .on('error', errorLog)
-        .pipe(prefix('last 2 versions'))
-        .pipe(gulp.dest('css'))
-        .pipe(livereload());
+gulp.task('css', function(){
+    var processors = [
+        csswring,
+        mqpacker,
+        autoprefixer({browsers: ['last 4 version']})
+    ];
+
+    return gulp.src( path.css )
+    .pipe(plumber())
+    .pipe(stylus( { use: axis() } ))
+    .pipe(rucksack())
+    .pipe(cssnext(processors))
+    .pipe(gulp.dest('./css/'));
 });
 
-// Image - Compress
-gulp.task('image', function(){
-    gulp.src('images/**/*')
-        .pipe(imagemin())
-        .pipe(gulp.dest('imagesmin'));
-});
 
-//Watch
 gulp.task('watch', function(){
-    var server = livereload();
-    gulp.watch('scripts/**/*.js', ['scripts']);
-    gulp.watch('scss/**/*.scss', ['styles']);
-    gulp.watch('images/**/*', ['image']);
+    gulp.watch( path.css, ['css'] );
 });
 
-gulp.task('default', ['watch']);
+
+gulp.task('default', ['watch', 'css']);
